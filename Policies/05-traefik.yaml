@@ -1,0 +1,54 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: traefik-network-policy
+  namespace: traefik
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 8443
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: whoami
+    ports:
+    - protocol: TCP
+      port: 80
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: authentik
+    ports:
+    - protocol: TCP
+      port: 9000
+    - protocol: TCP
+      port: 9443
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: grafana
+    ports:
+    - protocol: TCP
+      port: 3000
+  # DNS resolution
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Kubernetes API server (host network, not a pod)
+  - ports:
+    - protocol: TCP
+      port: 6443
