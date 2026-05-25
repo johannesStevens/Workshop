@@ -70,13 +70,13 @@ EOF
 - sudo docker run hello-world
 
 ## install cri-dockerd
-- curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v0.4.3/cri-dockerd-0.4.3.amd64.tgz
+- curl -LO -x http://hdppkgm:3128 https://github.com/Mirantis/cri-dockerd/releases/download/v0.4.3/cri-dockerd-0.4.3.amd64.tgz
 - tar xvf cri-dockerd-0.4.3.amd64.tgz
 - sudo install -o root -g root -m 0755 cri-dockerd/cri-dockerd /usr/local/bin/cri-dockerd
 
 ## setup cri-dockerd systemd service
-- curl -LO https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.service
-- curl -LO https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.socket
+- curl -LO -x http://hdppkgm:3128 https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.service
+- curl -LO -x http://hdppkgm:3128 https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.socket
 - sudo mv cri-docker.service cri-docker.socket /etc/systemd/system/
 - sudo sed -i -e 's,/usr/bin/cri-dockerd,/usr/local/bin/cri-dockerd,' /etc/systemd/system/cri-docker.service
 - sudo systemctl daemon-reload
@@ -107,7 +107,7 @@ This will produce the kubeadm join command you need in order to add worker nodes
 # Install network plugin (container network interface: cilium)
 
 ## install Cilium CLI
-- curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/v0.19.2/cilium-linux-amd64.tar.gz
+- curl -L -x http://hdppkgm:3128 --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/v0.19.2/cilium-linux-amd64.tar.gz
 - sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
 - rm cilium-linux-amd64.tar.gz
 
@@ -157,7 +157,7 @@ don't run this! kubectl label nodes --all node.kubernetes.io/exclude-from-extern
 
 ## Install Helm
 Helm can be installed on a local machine that connects to the cluster using kubeconfig. Alternatively it works on a controlplane node as well
-- curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+- curl -fsSL -o -x http://hdppkgm:3128 get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 - chmod 700 get_helm.sh
 - ./get_helm.sh
 - verify: helm version
