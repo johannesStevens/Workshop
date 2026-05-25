@@ -14,35 +14,13 @@
 - sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 ## add Kubernetes yum repository
-cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
-[kubernetes]
-name=Kubernetes
-baseurl=https://pkgs.k8s.io/core:/stable:/v1.36/rpm/
-enabled=1
-gpgcheck=1
-gpgkey=https://pkgs.k8s.io/core:/stable:/v1.36/rpm/repodata/repomd.xml.key
-exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
-EOF
+sh kubernetesrepo.sh
 
 ## add centos repo
-cat <<EOF | sudo tee /etc/yum.repos.d/centos-baseos.repo
-[centos-baseos]
-name=CentOS Stream 9 - BaseOS
-baseurl=https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/
-enabled=1
-gpgcheck=1
-gpgkey=https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official-SHA256
-EOF
+sh centosrepo.sh
 
 ## add appstream reo
-cat <<EOF | sudo tee /etc/yum.repos.d/centos-appstream.repo
-[centos-appstream]
-name=CentOS Stream 9 - AppStream
-baseurl=https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/
-enabled=1
-gpgcheck=1
-gpgkey=https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official-SHA256
-EOF
+sh appstreamrepo.sh
 
 ## add docker repo
 - sudo dnf -y install dnf-plugins-core
