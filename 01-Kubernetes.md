@@ -9,6 +9,10 @@
 
 # Prerequisites
 
+## commands by nils:
+- sudo systemctl disable firewalld
+- sudo systemctl stop firewalld
+
 ## disable SELinux
 - sudo setenforce 0
 - sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
@@ -40,12 +44,11 @@ sh appstreamrepo.sh
 # Install docker and cri-dockerd
 
 ## install docker engine
-- sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-- confirm with y twice when prompted
+- sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 ## start and test docker
 - sudo systemctl enable --now docker
-- sudo docker run hello-world
+- sudo HTTPS_PROXY=http://hdppkgm:3128 HTTP_PROXY=http://hdppkgm:3128 docker run hello-world"
 
 ## install cri-dockerd
 - curl -LO -x http://hdppkgm:3128 https://github.com/Mirantis/cri-dockerd/releases/download/v0.4.3/cri-dockerd-0.4.3.amd64.tgz
@@ -57,24 +60,44 @@ sh appstreamrepo.sh
 - curl -LO -x http://hdppkgm:3128 https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.socket
 - sudo mv cri-docker.service cri-docker.socket /etc/systemd/system/
 - sudo sed -i -e 's,/usr/bin/cri-dockerd,/usr/local/bin/cri-dockerd,' /etc/systemd/system/cri-docker.service
+- sudo groupadd docker
+- sudo systemctl enable --now podman
 - sudo systemctl daemon-reload
 - sudo systemctl enable --now cri-docker.socket
 
 ## verify cri-dockerd
 - Should show active (listening): sudo systemctl status cri-docker.socket
 - verifiy socket exists: ls -la /var/run/cri-dockerd.sock
-- test cri-dockerd respond:  sudo crictl --runtime-endpoint unix:///var/run/cri-dockerd.sock info
 
 # Initialize Kubernetes cluster
 
+## make all machines using the proxy
+sudo -s
+systemctl edit podman
+go down two lines
+add this :
+[Service]
+Environment="HTTP_PROXY=hdppkgm:3128"
+Environment="HTTPS_PROXY=hdppkgm:3128"
+strg+x
+y
+enter
+systemctl daemon-reload
+systemctl restart podman
+
+## disable swap on all machines:
+- sudo swapoff -a
+- sudo sed -i '/swap/s/^/#/' /etc/fstab
+ 
+
 ## Single Control node Init
-- sudo kubeadm init --cri-socket=unix:///var/run/cri-dockerd.sock --pod-network-cidr=10.244.0.0/16
+- sudo kubeadm init --cri-socket=unix:///var/run/cri-dockerd.sock --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU
 This will produce the kubeadm join command you need in order to add worker nodes (copy it for later use)
 
 ## Multi Control node init
 - Make sure the loadbalancer points to all your virtual machines
 - get the ip and port of the loadbalancer
-- sudo kubeadm init --control-plane-endpoint "<LB_IP>:<LB_Port>" --upload-certs --cri-socket=unix:///var/run/cri-dockerd.sock   --pod-network-cidr=10.244.0.0/16
+- sudo kubeadm init --control-plane-endpoint "<LB_IP>:<LB_Port>" --upload-certs --cri-socket=unix:///var/run/cri-dockerd.sock   --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU
 This will produce the kubeadm join command you need in order to add worker nodes and other control nodes (copy it for later use)
 
 ## make cluster usable
@@ -97,6 +120,17 @@ This will produce the kubeadm join command you need in order to add worker nodes
 
 ## verify Pod Network
 - check for CoreDNS pod: kubectl get pods --all-namespaces
+
+## if coredns doesnt start:
+
+- kubectl edit configmap coredns -n kube-system
+- switch:
+forward . /etc/resolv.conf
+- with: 
+forward . 10.185.196.53 10.185.196.54 10.185.196.55
+- kubectl rollout restart deployment coredns -n kube-system
+
+check again with check for CoreDNS pod: kubectl get pods --all-namespaces
 
 # post Install
 
@@ -135,9 +169,9 @@ don't run this! kubectl label nodes --all node.kubernetes.io/exclude-from-extern
 
 ## Install Helm
 Helm can be installed on a local machine that connects to the cluster using kubeconfig. Alternatively it works on a controlplane node as well
-- curl -fsSL -o -x http://hdppkgm:3128 get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+- curl -fsSL -x http://hdppkgm:3128 -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 - chmod 700 get_helm.sh
-- ./get_helm.sh
+- HTTPS_PROXY=http://hdppkgm:3128 HTTP_PROXY=http://hdppkgm:3128 ./get_helm.sh
 - verify: helm version
 - rm get_helm.sh
 
@@ -162,7 +196,16 @@ Helm can be installed on a local machine that connects to the cluster using kube
 - The certificate-key is printed by kubeadm init --upload-certs (expires after 2 hours)
 - To regenerate: sudo kubeadm init phase upload-certs --upload-certs
 
-
+# install haproxy on loadbalander
+- ssh to loadbalacer machine
+- sudo -s
+- dnf install haproxy
+- vi /etc/haproxy/haproxy.cfg
+- G
+- i
+--> change the ips to your ips
+- systemctl enable --now haproxy
+ 
 
 # Remove a node
 - list nodes: kubectl get nodes

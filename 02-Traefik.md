@@ -10,7 +10,7 @@ Helm install example
 ## Install
 - helm repo add traefik https://traefik.github.io/charts
 - helm repo update
-- helm install traefik traefik/traefik -f values.yaml --namespace traefik --create-namespace --wait
+- helm install traefik traefik/traefik -f /mnt/shared/20-Shared_Files/Workshop/Traefik/values.yaml --namespace traefik --create-namespace --wait
 
 ## check install
 - kubectl describe GatewayClass traefik
